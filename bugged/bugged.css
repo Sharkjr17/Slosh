@@ -1,0 +1,63 @@
+/* =====================
+   Global Variables
+   ===================== */
+:root {
+     --abso-black: #000000;
+     --abso-white: #ffffff;
+
+     --gray-1: #fffbf0;
+     --gray-2: #c0c0c0;
+     --gray-3: #a0a0a4;
+     --gray-4: #808080;
+
+     --dull-red: #800000;
+     --dull-green: #008000;
+     --dull-yellow: #808000;
+     --dull-blue: #000080;
+     --dull-pink: #800080;
+     --dull-teal: #008080;
+
+     --vibr-red: #ff0000;
+     --vibr-green: #00ff00;
+     --vibr-yellow: #ffff00;
+     --vibr-blue: #0000ff;
+     --vibr-pink: #ff00ff;
+     --vibr-teal: #00ffff;
+
+}
+
+
+
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  overflow: scroll;
+}
+
+body {
+  font-family: "MS Sans Serif",Tahoma,Verdana,Segoe,sans-serif; 
+  background-color: var(--console-bg);
+  color: black;
+  padding-bottom: 28px;
+}
+
+
+
+#bottomBar {
+  position: absolute;
+  display: flex;
+  width: 100vw;
+  bottom: 0;
+  border-top: 5px;
+  border-style: solid None None None;
+  height: 7vh;
+}
+
+#rest {
+  height: 93vh;
+  overflow: scroll;
+  background-color: var(--console-teal);
+}
+
+
