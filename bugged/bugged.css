@@ -26,38 +26,144 @@
 
 }
 
-
-
-/* Global Reset */
+/* =====================
+   Global Reset
+   ===================== */
 * {
   margin: 0;
   padding: 0;
-  overflow: scroll;
 }
 
 body {
   font-family: "MS Sans Serif",Tahoma,Verdana,Segoe,sans-serif; 
-  background-color: var(--console-bg);
+  background-color: var(--gray-2);
   color: black;
-  padding-bottom: 28px;
+}
+
+.inactive {
+  display: none;
 }
 
 
 
+
+/* =====================
+   Bottom Bar
+   ===================== */
 #bottomBar {
-  position: absolute;
+  position: fixed;
+  bottom: 0;
   display: flex;
   width: 100vw;
-  bottom: 0;
-  border-top: 5px;
-  border-style: solid None None None;
-  height: 7vh;
+  height: 5vh;
+  overflow: visible;
+  background-color: var(--gray-2);
+
+  border-top: 1px;
+  border-bottom: 1px;
+  border-style: solid None solid None;
+  border-top-color: var(--gray-1);
+  border-bottom-color: var(--gray-4);
 }
 
-#rest {
-  height: 93vh;
-  overflow: scroll;
-  background-color: var(--console-teal);
+#start-menu-button {
+  background-color: var(--gray-2);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--gray-1) var(--gray-4) var(--gray-4) var(--gray-1);
+  cursor: pointer;
+
+  position: relative;
+  left: 1vw;
+  top: 1vh;
+  width: 5vw;
+  height: 3vh;
 }
+
+#start-menu-button:active {
+  border-style: dotted;
+  border-color: var(--gray-4) var(--gray-1) var(--gray-1) var(--gray-4);
+}
+
+
+#start-menu {
+  position: fixed;
+  left: 0;
+  bottom: 5vh;
+  z-index: 500;
+  height: 50vh;
+  width: 25vw;
+
+  background-color: var(--gray-2);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--gray-1) var(--gray-4) var(--gray-4) var(--gray-1);  
+}
+
+
+
+
+
+
+
+/* =====================
+   Desktop
+   ===================== */
+
+#desktop-container {
+  width: 100vw;
+  height: 95vh;
+  position: fixed;
+  overflow: hidden;
+  background-color: var(--dull-teal);
+}
+
+#desktop-container table {
+  border-collapse: collapse;
+}
+
+#desktop-container tr {
+  height: 5vh;
+}
+
+#desktop-container td {
+  width: 5vw;
+}
+
+.desktop-app {
+  width: 100%;
+  height: 100%;
+}
+
+.desktop-child {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+
+/* =====================
+   Drag and Drop API
+   ===================== */
+
+/* Styling for the app while it is being dragged */
+.desktop-app.dragging {
+    background-color: rgba(173, 216, 230, 0.6) !important; /* Light blue */
+    opacity: 0.5;
+    border-radius: 4px; /* Optional: makes the background look cleaner */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
