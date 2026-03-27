@@ -38,6 +38,7 @@ body {
   font-family: "MS Sans Serif",Tahoma,Verdana,Segoe,sans-serif; 
   background-color: var(--gray-2);
   color: black;
+  box-sizing: border-box;
 }
 
 .inactive {
@@ -120,6 +121,7 @@ body {
 
 #desktop-container table {
   border-collapse: collapse;
+  overflow: none;
 }
 
 #desktop-container tr {
@@ -130,15 +132,10 @@ body {
   width: 5vw;
 }
 
-.desktop-app {
-  width: 100%;
-  height: 100%;
-}
+
 
 .desktop-child {
   position: absolute;
-  height: 100%;
-  width: 100%;
 }
 
 

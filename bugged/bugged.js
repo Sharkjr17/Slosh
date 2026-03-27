@@ -1,12 +1,10 @@
 
 
-document.getElementById("start-menu-button").addEventListener("click", () => {
-    const element = document.getElementById("start-menu");
+
+function inactiveToggle(elementID) {
+    const element = document.getElementById(elementID)
     element.classList.toggle('inactive');
-});
-
-
-
+}
 
 /* =====================
    The one, the only, PLACEHOLDER FUNCTION
