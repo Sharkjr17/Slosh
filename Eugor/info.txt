@@ -1,0 +1,30 @@
+Project Summary: EUGOR (Web Port)
+Objective: Porting a retro-style Python CLI roguelike to a web-based (HTML5/CSS3/JS) "Console" environment. The game is designed to be part of a multi-game GitHub repository, emphasizing LocalStorage for saves and Google Doc-compatible Import/Export.
+1. Current Progress & Architecture
+Aesthetic: High-contrast Monochrome (Black/White) with ANSI color accents for entities.
+Rendering Engine: A CSS-Grid "Seamless Beam" system. It uses 25px tiles and absolute-positioned div segments to create continuous wall lines without the "comb" or "double-line" artifacts common in ASCII-to-HTML conversions.
+Input System: WASD movement with a turn-based logic lock.
+Persistence: A central gameState object synced to localStorage under the key eugor_save_data.
+Data Management: A functional modal that handles JSON string Import/Export and a "Wipe All" safety clear.
+2. Ported Logic (From Python)
+Difficulty Scaling: 4-tier selection (A-D) that modifies maxHP, strengthMult, and starting items (e.g., Copper Sword vs. Copper Dagger).
+Tile Manifest:
+@: Player | E/P/R/F: Enemy types (Regular, Patrol, Reckless, Flying).
+&: Exit/Door | ^: Traps | ≈: Water.
+=|: Walls (Rendered as seamless lines).
+Map Logic: Current testing map is a 20x9 grid ("Paved: Small") loaded from a JSON-style dictionary.
+3. Core Data Schemas (Logged)
+I have the full JSON structures for:
+enemy.json (e.g., Slime stats).
+item.json (Weapon damage/rarity, including the "Tungsten Cube").
+level.json (Overworld weights and path descriptions).
+dungeon.json (All room layouts: Paved, Angled, Long, Tall, Circle, Cross).
+4. Technical Specs for Continuation
+HTML: Uses a single-page structure with .inactive classes to swap between the Menu, Difficulty Selection, and Game Screen.
+CSS: Uses font-size: 0 on grid tiles to hide raw text characters while using 101% width/height on wall "beams" to ensure they overlap and connect perfectly.
+JS: Uses gameState.grid (2D Array) as the "Source of Truth" for collision and rendering.
+5. Next Steps Required
+Enemy AI: Implement the BFS pathfinding and Line-of-Sight (LoS) logic for Patrolling enemies in JavaScript.
+Combat System: Implement the start_encounter screen and the turn-based battle loop.
+Overworld: Implement the weighted path choice logic (move() function) to transition between rooms.
+Next Step for User: Whenever you are ready to resume, just paste this in and we can start with the Enemy AI BFS implementation or the Combat Screen.

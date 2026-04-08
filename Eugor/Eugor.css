@@ -1,0 +1,205 @@
+/* ============================================================
+   1. GLOBAL VARIABLES (SYSTEM PALETTE)
+   ============================================================ */
+:root {
+    --abso-black: #000000;
+    --abso-white: #ffffff;
+    
+    /* System Grays */
+    --gray-1: #fffbf0;
+    --gray-2: #c0c0c0;
+    --gray-3: #a0a0a4;
+    --gray-4: #808080;
+
+    /* Vibrant Entity Colors */
+    --vibr-red:    #ff0000; /* Enemy / Danger */
+    --vibr-green:  #00ff00; /* Player / Health */
+    --vibr-yellow: #ffff00; /* Interactive / Door */
+    --vibr-blue:   #0000ff; /* Mana / Magic */
+    --vibr-pink:   #ff00ff; /* Rare / Boss */
+    --vibr-teal:   #00ffff; /* Water / Special */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--abso-black);
+    color: var(--abso-white);
+    font-family: "Courier New", monospace;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ============================================================
+   2. CONTAINERS & SCREEN STATES
+   ============================================================ */
+.console-container {
+    text-align: center;
+    border: 4px double var(--abso-white);
+    padding: 3rem;
+    min-width: 500px;
+    background: var(--abso-black);
+}
+
+.inactive { display: none !important; }
+
+#game-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ============================================================
+   3. NAVIGATION & BUTTONS
+   ============================================================ */
+.game-title { 
+    font-size: 5rem; 
+    letter-spacing: 15px; 
+    margin-bottom: 2rem; 
+    border-bottom: 2px solid var(--abso-white); 
+    color: var(--gray-1);
+}
+
+.prompt-text { margin-bottom: 20px; letter-spacing: 5px; color: var(--vibr-yellow); }
+
+.console-link {
+    background: none;
+    border: none;
+    color: var(--gray-2);
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-family: inherit;
+    text-transform: uppercase;
+}
+
+.console-link:hover { 
+    background: var(--abso-white); 
+    color: var(--abso-black); 
+}
+
+.footer-prompt { 
+    margin-top: 2rem; 
+    font-size: 0.8rem; 
+    color: var(--gray-4); 
+}
+
+/* ============================================================
+   4. SEAMLESS GRID ENGINE
+   ============================================================ */
+#dungeon-grid { 
+    display: grid; 
+    gap: 0; 
+    background-color: var(--abso-black);
+    border: 2px solid var(--gray-3);
+}
+
+.tile { 
+    width: 25px; 
+    height: 25px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    position: relative; 
+    font-size: 0; /* Hides raw ASCII characters */
+}
+
+/* Horizontal Wall Beam (=) */
+.wall-h { 
+    position: absolute; 
+    width: 101%; 
+    height: 4px; 
+    background: var(--abso-white); 
+    top: 50%; 
+    transform: translateY(-50%); 
+    z-index: 1;
+}
+
+/* Vertical Wall Beam (|) */
+.wall-v { 
+    position: absolute; 
+    width: 4px; 
+    height: 101%; 
+    background: var(--abso-white); 
+    left: 50%; 
+    transform: translateX(-50%); 
+    z-index: 1;
+}
+
+/* ============================================================
+   5. ENTITY & STATUS STYLING
+   ============================================================ */
+.entity { 
+    font-size: 1.2rem; 
+    font-weight: bold; 
+    z-index: 10; 
+    position: relative; 
+}
+
+.player { color: var(--vibr-green); text-shadow: 0 0 5px var(--vibr-green); }
+.enemy  { color: var(--vibr-red); }
+.door   { color: var(--vibr-yellow); }
+.trap   { color: var(--vibr-pink); }
+.water  { color: var(--vibr-teal); }
+
+#status-bar {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    font-size: 1.2rem;
+    border: 2px solid var(--gray-4);
+    color: var(--gray-2);
+}
+
+#hp-val { color: var(--vibr-red); font-weight: bold; }
+
+/* ============================================================
+   6. MODAL & DATA I/O
+   ============================================================ */
+.console-modal { 
+    position: fixed; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    background: var(--abso-black); 
+    border: 2px solid var(--abso-white); 
+    padding: 30px; 
+    z-index: 100; 
+    width: 90%; 
+    max-width: 500px; 
+}
+
+textarea { 
+    width: 100%; height: 150px; 
+    background: #000; 
+    color: var(--gray-1); 
+    border: 1px solid var(--gray-3); 
+    margin: 15px 0; padding: 10px; 
+    resize: none; 
+    font-family: inherit;
+}
+
+.modal-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.modal-buttons button { 
+    background: none; 
+    color: var(--abso-white); 
+    border: 1px solid var(--abso-white); 
+    padding: 10px; 
+    cursor: pointer; 
+    font-family: inherit;
+}
+
+.modal-buttons button:hover { background: var(--abso-white); color: var(--abso-black); }
+
+.danger:hover { 
+    background: var(--vibr-red) !important; 
+    color: var(--abso-white) !important; 
+    border-color: var(--vibr-red) !important;
+}

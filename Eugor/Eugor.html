@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EUGOR</title>
+    <link rel="stylesheet" href="Eugor.css" />
+    <script defer src="Eugor.js"></script>
+</head>
+<body>
+
+    <!-- [SECTION] MAIN MENU -->
+    <div id="main-menu" class="console-container">
+        <h1 class="game-title">EUGOR</h1>
+        <nav class="menu-options">
+            <button id="btn-start" class="console-link">START GAME</button>
+            <button id="btn-data" class="console-link">DATA MGMT</button>
+        </nav>
+        <div id="save-status" class="footer-prompt">-- NO SAVE DETECTED --</div>
+    </div>
+
+    <!-- [SECTION] DIFFICULTY SELECTION -->
+    <div id="diff-screen" class="console-container inactive">
+        <h2 class="prompt-text">SELECT DIFFICULTY</h2>
+        <nav class="menu-options">
+            <button class="console-link diff-opt" data-diff="A">A.) EASY</button>
+            <button class="console-link diff-opt" data-diff="B">B.) INTERMEDIATE</button>
+            <button class="console-link diff-opt" data-diff="C">C.) HARD</button>
+            <button class="console-link diff-opt" data-diff="D">D.) IMPOSSIBLE</button>
+        </nav>
+    </div>
+
+    <!-- [SECTION] ACTIVE GAME SCREEN -->
+    <div id="game-screen" class="inactive">
+        <!-- Render Target for JS -->
+        <div id="dungeon-grid"></div>
+        
+        <!-- UI Overlay -->
+        <div id="status-bar">
+            <span>HP: <span id="hp-val">0</span></span>
+            <span>[W/A/S/D] TO MOVE</span>
+        </div>
+    </div>
+
+    <!-- [SECTION] SYSTEM DATA MODAL (I/O) -->
+    <div id="data-modal" class="inactive console-modal">
+        <div class="modal-content">
+            <h3>SYSTEM DATA I/O</h3>
+            <textarea id="data-io" placeholder="Paste JSON save data here..."></textarea>
+            <div class="modal-buttons">
+                <button id="btn-import">IMPORT</button>
+                <button id="btn-export">EXPORT</button>
+                <button id="btn-clear" class="danger">WIPE ALL</button>
+                <button id="btn-close-modal">BACK</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
