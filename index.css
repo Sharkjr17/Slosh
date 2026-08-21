@@ -33,6 +33,7 @@ h1 { margin-bottom: 17px; font-family: 'Syne', sans-serif; font-size: clamp(4.2r
 .game-card:nth-child(4) { animation-delay: .24s; }
 .game-card:hover { border-color: var(--accent); background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 13%, transparent), rgba(255,255,255,.025) 50%); transform: translateY(-7px); }
 .card-cyan { --accent: var(--cyan); } .card-pink { --accent: var(--pink); } .card-lime { --accent: var(--lime); } .card-gold { --accent: var(--gold); }
+.card-red { --accent: #d85252; }
 .card-topline { display: flex; align-items: center; gap: 9px; color: var(--accent); }
 .card-index { margin-left: auto; opacity: .7; }
 .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent); }

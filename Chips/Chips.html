@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Chips // The House Is Listening</title>
+	<link rel="icon" type="image/x-icon" href="../image/FRIGGINAWESOME.jpeg" />
+	<link rel="stylesheet" href="Chips.css" />
+	<script defer src="Chips.js"></script>
+</head>
+<body>
+	<main id="app" class="app-shell">
+		<header class="masthead"><a class="back-link" href="../index.html">&lt;- SL0SH ARCHIVE</a><span class="signal">TABLE 09 // LIVE</span></header>
+		<section id="name-screen" class="screen intro-screen">
+			<p class="eyebrow">A GAME OF NERVE</p><h1>CHIPS<span>_</span></h1>
+			<p class="lede">The table is ready. It has been waiting longer than you have.</p>
+			<form id="name-form" class="entry-form"><label for="player-name">IDENTIFY YOURSELF</label><input id="player-name" name="player-name" maxlength="18" autocomplete="off" required placeholder="enter a name" /><button class="action-button" type="submit">CONTINUE <span>-&gt;</span></button></form>
+		</section>
+		<section id="difficulty-screen" class="screen selection-screen hidden"><p class="eyebrow">SECOND DOOR // DIFFICULTY</p><h2>How much of a chance<br>do you want?</h2><div id="difficulty-options" class="option-grid"><button class="option-button" data-difficulty="easy"><strong>EASY</strong><span>THE DEALER HESITATES</span></button><button class="option-button" data-difficulty="medium"><strong>MEDIUM</strong><span>A FAIR TABLE, MOSTLY</span></button><button class="option-button" data-difficulty="hard"><strong>HARD</strong><span>THE HOUSE WATCHES CLOSELY</span></button><button class="option-button" data-difficulty="impossible"><strong>IMPOSSIBLE</strong><span>NO ONE LEAVES A WINNER</span></button></div></section>
+		<section id="game-select-screen" class="screen selection-screen hidden"><p class="eyebrow">TABLE SELECTION // <span id="selected-player"></span></p><h2>Choose your game.</h2><div class="option-grid game-options"><button class="option-button featured" data-game="holdem"><strong>TEXAS HOLD'EM</strong><span>THE FIRST TABLE // PLAYABLE</span></button><button class="option-button disabled" data-game="blackjack" disabled><strong>BLACKJACK</strong><span>THE SECOND TABLE // COMING SOON</span></button></div></section>
+		<section id="table-screen" class="screen table-screen hidden"><div class="table-heading"><div><p class="eyebrow">TEXAS HOLD'EM // <span id="table-difficulty"></span></p><h2>THE LONG TABLE</h2></div><button id="new-run" class="quiet-button">NEW RUN</button></div><div class="dealer-zone"><div class="zone-label">DEALER <span id="dealer-name">THE HOUSE</span></div><div id="dealer-cards" class="cards" aria-label="Dealer cards"></div><div id="dealer-dialogue" class="dialogue" role="status"></div></div><div class="community-zone"><div class="zone-label">COMMUNITY CARDS</div><div id="community-cards" class="cards"></div></div><div class="player-zone"><div class="zone-label"><span id="player-label">PLAYER</span><span class="player-chips">CHIPS <strong id="bankroll">0</strong></span></div><div id="player-cards" class="cards" aria-label="Your cards"></div><div class="wager-line"><label for="raise-amount">WAGER <strong id="pot-size">0</strong></label><input id="raise-amount" type="number" min="10" step="10" value="20"><span class="street-label" id="street-label">PRE-FLOP</span></div><div id="table-actions" class="action-row"></div><p id="round-message" class="round-message"></p></div></section>
+	</main>
+</body>
+</html>
