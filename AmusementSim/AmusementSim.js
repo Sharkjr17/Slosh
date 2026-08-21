@@ -1,636 +1,200 @@
-// ==========================================
-// ======= WIN95 PARK TYCOON ENGINE =========
-// ==========================================
+const rideModels = {
+    'classic wooden': { type: 'Coaster', yearDeveloped: 1884, lifeSpan: 40, basePayroll: 120, sizePoints: 10, intensityPoints: 3, themePoints: 4, excitementPoints: 5, cost: 9000 },
+    'carousel': { type: 'Flat ride', yearDeveloped: 1880, lifeSpan: 50, basePayroll: 90, sizePoints: 5, intensityPoints: 1, themePoints: 5, excitementPoints: 3, cost: 5000 },
+    'scrambler': { type: 'Flat ride', yearDeveloped: 1950, lifeSpan: 25, basePayroll: 100, sizePoints: 6, intensityPoints: 5, themePoints: 3, excitementPoints: 5, cost: 6500 },
+    'wild mouse': { type: 'Coaster', yearDeveloped: 1930, lifeSpan: 25, basePayroll: 140, sizePoints: 7, intensityPoints: 7, themePoints: 3, excitementPoints: 7, cost: 11000 },
+    'family coaster': { type: 'Coaster', yearDeveloped: 1980, lifeSpan: 30, basePayroll: 180, sizePoints: 10, intensityPoints: 6, themePoints: 6, excitementPoints: 7, cost: 18000 },
+    'top spin': { type: 'Flat ride', yearDeveloped: 1990, lifeSpan: 20, basePayroll: 160, sizePoints: 8, intensityPoints: 9, themePoints: 4, excitementPoints: 8, cost: 22000 },
+    'inverted coaster': { type: 'Coaster', yearDeveloped: 1992, lifeSpan: 30, basePayroll: 250, sizePoints: 18, intensityPoints: 10, themePoints: 7, excitementPoints: 10, cost: 35000 },
+    'modern suspended': { type: 'Coaster', yearDeveloped: 1994, lifeSpan: 25, basePayroll: 220, sizePoints: 14, intensityPoints: 8, themePoints: 8, excitementPoints: 9, cost: 30000 }
+};
 
-let saveFile = {
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const seasonDemand = [0.8, 0.8, 0.9, 1.1, 1.2, 1.5, 1.5, 1.4, 1.1, 1, 0.9, 0.8];
+const startingState = () => ({
     money: 50000,
-    reputation: 10.0,
-    currentDate: { month: 1, year: 1995 }, // Changed from 3 to 1
-    totalLandAvailable: 10, // Added land cap variable
+    reputation: 10,
+    currentDate: { month: 1, year: 1995 },
+    gatePrice: 12,
+    foodPrice: 6,
+    advertising: 0,
+    staff: 2,
+    maintenance: 2,
+    totalLandAvailable: 10,
     rides: {},
-    history: {
-        months: [],
-        years: [],
-    }
-};
+    history: []
+});
 
-let statsViewOffset = 0; 
-let currentMenu = 'root'; 
+let saveFile = startingState();
+let statsViewOffset = 0;
+let currentMenu = 'root';
+let isProcessing = false;
 
+function normalizeState(raw) {
+    const state = { ...startingState(), ...raw };
+    state.currentDate = { ...startingState().currentDate, ...(raw.currentDate || {}) };
+    state.rides = Object.fromEntries(Object.entries(raw.rides || {}).map(([id, ride]) => {
+        const modelName = rideModels[ride.model] ? ride.model : 'classic wooden';
+        const model = rideModels[modelName];
+        const sizePoints = Number(ride.sizePoints || model.sizePoints);
+        return [id, { ...model, ...ride, model: modelName, age: Number(ride.age || ride.actualAge || 0), qMult: Number(ride.qMult || 1), sizePoints, payroll: Number(ride.payroll || model.basePayroll + sizePoints * 10), monthlyCapacity: sizePoints * 100, price: Number(ride.price || state.gatePrice || 12), ridersThisMonth: Number(ride.ridersThisMonth || 0) }];
+    }));
+    const history = raw.history && Array.isArray(raw.history.months) ? raw.history.months : (Array.isArray(raw.history) ? raw.history : []);
+    state.history = history.map(entry => entry.ledger ? { ...entry.ledger, date: entry.date, note: 'Imported report from an earlier park version.' } : entry);
+    state.gatePrice = Number(state.gatePrice) || 12;
+    state.foodPrice = Number(state.foodPrice) || 6;
+    state.staff = Math.max(0, Number(state.staff) || 0);
+    state.maintenance = Math.max(0, Number(state.maintenance) || 0);
+    return state;
+}
 
-// ==========================================
-// ======= GAME DATA SET  ===================
-// ==========================================
-const gameData = {
-    // 1. ROLLER COASTER MODELS
-    model: {
-        "classic wooden": { yearDeveloped: 1884, lifeSpan: 40, payroll: 2, baseCapacity: 1200 },
-        "side friction coaster": { yearDeveloped: 1900, lifeSpan: 15, payroll: 2, baseCapacity: 800 },
-        "wild mouse": { yearDeveloped: 1930, lifeSpan: 25, payroll: 2, baseCapacity: 600 },
-        "kiddie coaster": { yearDeveloped: 1950, lifeSpan: 20, payroll: 2, baseCapacity: 400 },
-        "junior coaster": { yearDeveloped: 1965, lifeSpan: 25, payroll: 2, baseCapacity: 800 },
-        "mine train": { yearDeveloped: 1966, lifeSpan: 30, payroll: 3, baseCapacity: 1600 },
-        "powered coaster": { yearDeveloped: 1967, lifeSpan: 25, payroll: 2, baseCapacity: 1000 },
-        "terrain coaster": { yearDeveloped: 1967, lifeSpan: 35, payroll: 3, baseCapacity: 1400 },
-        "looping coaster": { yearDeveloped: 1975, lifeSpan: 30, payroll: 4, baseCapacity: 1400 },
-        "corkscrew coaster": { yearDeveloped: 1976, lifeSpan: 30, payroll: 4, baseCapacity: 1200 },
-        "alpine coaster": { yearDeveloped: 1976, lifeSpan: 25, payroll: 2, baseCapacity: 500 },
-        "retro suspended": { yearDeveloped: 1981, lifeSpan: 25, payroll: 4, baseCapacity: 1200 },
-        "family coaster": { yearDeveloped: 1980, lifeSpan: 30, payroll: 2, baseCapacity: 1000 },
-        "boomerang shuttle": { yearDeveloped: 1984, lifeSpan: 25, payroll: 3, baseCapacity: 600 },
-        "stand-up coaster": { yearDeveloped: 1984, lifeSpan: 25, payroll: 4, baseCapacity: 1400 },
-        "bobsled coaster": { yearDeveloped: 1984, lifeSpan: 25, payroll: 3, baseCapacity: 1000 },
-        "hyper coaster": { yearDeveloped: 1989, lifeSpan: 35, payroll: 5, baseCapacity: 2000 },
-        "inverted coaster": { yearDeveloped: 1992, lifeSpan: 30, payroll: 4, baseCapacity: 1800 },
-        "modern suspended": { yearDeveloped: 1994, lifeSpan: 25, payroll: 4, baseCapacity: 1400 },
-        "lim launch coaster": { yearDeveloped: 1996, lifeSpan: 25, payroll: 4, baseCapacity: 1600 },
-        "dive coaster": { yearDeveloped: 1998, lifeSpan: 30, payroll: 4, baseCapacity: 1800 },
-        "floorless coaster": { yearDeveloped: 1999, lifeSpan: 30, payroll: 4, baseCapacity: 1800 },
-        "giga coaster": { yearDeveloped: 2000, lifeSpan: 35, payroll: 6, baseCapacity: 2400 },
-        "spinning coaster": { yearDeveloped: 2000, lifeSpan: 25, payroll: 3, baseCapacity: 1200 },
-        "impulse inverted": { yearDeveloped: 2000, lifeSpan: 25, payroll: 3, baseCapacity: 800 },
-        "flying coaster": { yearDeveloped: 2002, lifeSpan: 30, payroll: 5, baseCapacity: 1600 },
-        "strata coaster": { yearDeveloped: 2003, lifeSpan: 30, payroll: 6, baseCapacity: 2400 },
-        "catapult hydraulic": { yearDeveloped: 2003, lifeSpan: 25, payroll: 4, baseCapacity: 1400 },
-        "motorbike coaster": { yearDeveloped: 2004, lifeSpan: 25, payroll: 4, baseCapacity: 1000 },
-        "lsm multi-launch": { yearDeveloped: 2008, lifeSpan: 30, payroll: 4, baseCapacity: 1800 },
-        "hybrid wood-steel": { yearDeveloped: 2011, lifeSpan: 35, payroll: 4, baseCapacity: 2000 },
-        "wing coaster": { yearDeveloped: 2011, lifeSpan: 30, payroll: 5, baseCapacity: 1800 },
-        "single-rail coaster": { yearDeveloped: 2018, lifeSpan: 30, payroll: 4, baseCapacity: 1600 }
-    },
-
-    // 2. FLAT RIDE MODELS (Placeholder stats)
-    flatRides: {
-        "carousel": { yearDeveloped: 1880, lifeSpan: 50, payroll: 1, baseCapacity: 500 },
-        "scrambler": { yearDeveloped: 1950, lifeSpan: 25, payroll: 1, baseCapacity: 600 },
-        "top spin": { yearDeveloped: 1990, lifeSpan: 20, payroll: 2, baseCapacity: 800 }
-    },
-
-    // 3. MANUFACTURERS
-    manufacture: {
-        "RCCA": { qMult: 0.6 },
-        "Bow": { qMult: 0.8 },
-        "Ziekenhuis": { qMult: 1.0 },
-        "M&S": { qMult: 1.2 },
-        "GPC": { qMult: 1.4 },
-        "Kleinstuber": { qMult: 1.6 }
-    },
-
-    // 4. GUEST ARCHETYPES (Ported from your Python logic)
-    "guest": {
-        "children": {
-            "weight": 15,
-            "intensityPreference": [0.0, 0.5],
-            "ageTolerance": 999, // Infinite: They don't care about "vintage" or "new"
-            "priceTolerance": 8.00
-        },
-        "teenager": {
-            "weight": 30,
-            "intensityPreference": [3.0, 9.0],
-            "ageTolerance": 12, // 1 Year: They want the latest TikTok-worthy thrill
-            "priceTolerance": 15.00
-        },
-        "young adults": {
-            "weight": 20,
-            "intensityPreference": [2.0, 10.0],
-            "ageTolerance": 36, // 3 Years: Moderate interest in novelty
-            "priceTolerance": 25.00
-        },
-        "parents": {
-            "weight": 30,
-            "intensityPreference": [0.0, 4.0],
-            "ageTolerance": 120, // 10 Years: High tolerance for established rides
-            "priceTolerance": 30.00
-        },
-        "old": {
-            "weight": 5,
-            "intensityPreference": [0.0, 0.5],
-            "ageTolerance": 240, // 20 Years: Actively prefer "Classics" (Nostalgia)
-            "priceTolerance": 40.00
-        }
-    },
-
-
-    // 5. SEASONAL DATA
-    monthData: {
-        "Jan": { guestBonus: 0.8 }, "Feb": { guestBonus: 0.8 }, "Mar": { guestBonus: 0.9 },
-        "Apr": { guestBonus: 1.1 }, "May": { guestBonus: 1.2 }, "Jun": { guestBonus: 1.5 },
-        "Jul": { guestBonus: 1.5 }, "Aug": { guestBonus: 1.4 }, "Sep": { guestBonus: 1.1 },
-        "Oct": { guestBonus: 1.0 }, "Nov": { guestBonus: 0.9 }, "Dec": { guestBonus: 0.8 }
-    }
-};
-
-
-// ==========================================
-// ======= NAVIGATION & SIDEBAR =============
-// ==========================================
+function money(value) { return `$${Math.round(value).toLocaleString()}`; }
+function getRides() { return Object.values(saveFile.rides); }
 
 function renderTabButtons() {
     const container = document.getElementById('tab-buttons');
     if (!container) return;
-    container.innerHTML = ''; 
+    const items = currentMenu === 'root' ? [
+        ['Park office', 'park'], ['Attractions', 'rides'], ['Operations', 'operations'],
+        ['Contracts', 'contracts'], ['Save management', 'settings']
+    ] : {
+        park: [['Park overview', 'park'], ['Set prices', 'pricing'], ['Advertising', 'advertising']],
+        rides: [['Build attraction', 'build'], ['Manage attractions', 'manage-rides']],
+        operations: [['Staffing', 'staff'], ['Maintenance', 'maintenance']],
+        contracts: [['Contract ledger', 'contracts']],
+        settings: [['Quick save', 'save'], ['Export save', 'export'], ['Import save', 'import'], ['New game', 'new-game']]
+    }[currentMenu] || [];
 
-    if (currentMenu === 'root') {
-        const menuItems = [
-            { label: 'Park Office', id: 'park' },
-            { label: 'Contracts', id: 'contracts' },
-            { separator: true },
-            { label: 'Attractions', id: 'rides' },
-            { label: 'Food Stalls', id: 'food' },
-            { label: 'Staffing', id: 'staff' },
-            { label: 'Equipment', id: 'equipment' },
-            { separator: true },
-            { label: 'Settings', id: 'settings' }
-        ];
-
-        menuItems.forEach(item => {
-            if (item.separator) {
-                container.innerHTML += `<div class="separator"></div>`;
-            } else {
-                container.innerHTML += `<button class="win95-btn" onclick="openSubMenu('${item.id}')">${item.label}</button>`;
-            }
-        });
-
-        container.innerHTML += `<div class="separator"></div>`;
-        container.innerHTML += `<button class="win95-btn primary" onclick="runEndOfMonth()">END MONTH</button>`;
-
-    } else {
-        container.innerHTML += `<button class="win95-btn back-btn" onclick="goBack()">&larr; BACK</button>`;
-        container.innerHTML += `<div class="separator"></div>`;
-
-        // --- SUB-MENU DEFINITIONS ---
-        const subMenus = {
-            park: [
-                { label: 'Advertising', action: "showPlaceholder('Advertising Office', 'Launch radio, TV, or billboard campaigns to boost visitor numbers.')" },
-                { label: 'Reputation', action: "showPlaceholder('Park Reputation', 'View what guests think about your safety, pricing, and cleanliness.')" },
-                { label: 'Manage Park', action: "showPlaceholder('General Management', 'Set park entry fees and opening hours.')" }
-            ],
-            rides: [
-                { label: 'Build New Ride', action: 'openBuildMenu()' },
-                { label: 'Manage Rides', action: 'openRidesList()' },
-                { label: 'Ride Demographics', action: "showPlaceholder('Ride Stats', 'See which age groups prefer which attractions.')" }
-            ],
-            food: [
-                { label: 'Build Food Stall', action: "showPlaceholder('Stall Construction', 'Select from Burger Bars, Soda Fountains, or Fries Stands.')" },
-                { label: 'Manage Stalls', action: "showPlaceholder('Inventory & Pricing', 'Adjust the price of salt on fries to increase drink sales.')" },
-                { label: 'Food Demographics', action: "showPlaceholder('Hunger Statistics', 'Track guest hunger levels and most popular snacks.')" }
-            ],
-            settings: [
-                { label: 'Save Management', action: "openSubMenu('save_management')" },
-                { label: 'Color Schemes', action: "showPlaceholder('Desktop Themes', 'Switch between Classic, Rose, and High Contrast modes.')" },
-                { label: 'GitHub', action: 'window.open("https://github.com")' }
-            ],
-            save_management: [
-                { label: 'Quick Save (Local)', action: "saveToLocal()" },
-                { label: 'Export to File', action: "exportSave()" },
-                { label: 'Import from File', action: "importSave()" },
-                { label: 'Delete Save Data', action: "confirmDelete()" }
-            ],
-            contracts: [
-                { label: 'All Contracts', action: "showPlaceholder('Legal Ledger', 'View active goals from the city council and investors.')" },
-                { label: 'Hide Completed', action: "showPlaceholder('Filter Applied', 'Completed contracts are now hidden from view.')" }
-            ],
-            staff: [
-                { label: 'Hire Staff', action: "showPlaceholder('HR Department', 'Recruit Janitors, Mechanics, and Entertainers.')" },
-                { label: 'Manage Staff', action: "showPlaceholder('Staff Roster', 'Set patrol zones and adjust monthly wages.')" }
-            ],
-            equipment: [
-                { label: 'All Equipment', action: "showPlaceholder('Tool Shed', 'View purchased lawnmowers, toolkits, and trash cans.')" },
-                { label: 'Hide Bought', action: "showPlaceholder('Filter Applied', 'Already owned equipment is hidden.')" }
-            ]
-        };
-
-        
-
-
-        const currentItems = subMenus[currentMenu] || [];
-        currentItems.forEach(item => {
-            container.innerHTML += `<button class="win95-btn" onclick="${item.action}">${item.label}</button>`;
-        });
-    }
+    container.innerHTML = currentMenu === 'root' ? '' : '<button class="win95-btn back-btn" onclick="goBack()">&lt;- BACK</button><div class="separator"></div>';
+    items.forEach(([label, id]) => { container.innerHTML += `<button class="win95-btn" onclick="openView('${id}')">${label}</button>`; });
+    if (currentMenu === 'root') container.innerHTML += '<div class="separator"></div><button class="win95-btn primary end-month" onclick="runEndOfMonth()">END MONTH <span>ENTER</span></button>';
 }
 
-// --- PLACEHOLDER RENDERER ---
-function showPlaceholder(title, description) {
-    const main = document.getElementById('main-content');
-    main.innerHTML = `
-        <div class="win95-dialog">
-            <h3 class="panel-title">${title}</h3>
-            <div style="padding: 20px; text-align: center; border: 2px inset var(--gray-1); background: #eee;">
-                <p><strong>[FEATURE UNDER DEVELOPMENT]</strong></p>
-                <p style="margin-top: 10px; font-size: 12px;">${description}</p>
-                <hr style="margin: 15px 0;">
-                <p style="font-size: 10px; color: gray;">Win95 System Error: Module not found. Please check back after next update.</p>
-            </div>
-        </div>
-    `;
-}
-
-function openSubMenu(menuId) {
-    currentMenu = menuId;
-    renderTabButtons();
-}
-
-function goBack() {
-    currentMenu = 'root';
-    renderTabButtons();
-    renderDashboard();
-}
-
-// ==========================================
-// ======= DASHBOARD & STATISTICS ===========
-// ==========================================
-
-function renderDashboard() {
-    const main = document.getElementById('main-content');
-    const history = saveFile.history.months;
-    
-    if (history.length === 0) {
-        main.innerHTML = `<div class="win95-dialog"><h3 class="panel-title">System Idle</h3><p>No data. End a month to generate a report.</p></div>`;
+function openSubMenu(menuId) { currentMenu = menuId; renderTabButtons(); }
+function goBack() { currentMenu = 'root'; renderTabButtons(); renderDashboard(); }
+function openView(view) {
+    if (['rides', 'operations', 'settings'].includes(view)) {
+        openSubMenu(view);
         return;
     }
-
-    const data = history[statsViewOffset].ledger;
-    const date = history[statsViewOffset].date;
-
-    main.innerHTML = `
-        <div class="win95-dialog">
-            <div class="stats-header">
-                <button class="win95-btn" onclick="changeStatsView(1)">&larr;</button>
-                <span>FINANCIAL STATEMENT: ${date}</span>
-                <button class="win95-btn" onclick="changeStatsView(-1)">&rarr;</button>
-            </div>
-
-            <!-- POPULATION SECTION -->
-            <div class="panel-title">POPULATION STATISTICS</div>
-            <div class="stats-grid" style="margin-bottom:10px;">
-                <div class="stat-card"><label>TOTAL RIDERS</label><div class="stat-val">${data.population.total.toLocaleString()}</div></div>
-                <div class="stat-card">
-                    <label>DEMOGRAPHICS</label>
-                    <div style="font-size:11px;">
-                        Teens: ${data.population.teens} (${((data.population.teens/data.population.total)*100).toFixed(0)}%)<br>
-                        Parents: ${data.population.parents} (${((data.population.parents/data.population.total)*100).toFixed(0)}%)
-                    </div>
-                </div>
-            </div>
-
-            <!-- TIME SECTION -->
-            <div class="panel-title">TIME ALLOCATION (PER CAPITA)</div>
-            <div class="stats-grid" style="margin-bottom:10px;">
-                <div class="stat-card"><label>IN RIDES</label><div class="stat-val">${(data.time.totalInRides / data.population.total).toFixed(1)}m</div></div>
-                <div class="stat-card"><label>IN STALLS</label><div class="stat-val">${(data.time.totalInStalls / data.population.total).toFixed(1)}m</div></div>
-                <div class="stat-card"><label>WASTED</label><div class="stat-val" style="color:red;">${(data.time.totalWasted / data.population.total).toFixed(1)}m</div></div>
-            </div>
-
-            <!-- REVENUE SECTION -->
-            <div class="panel-title">BALANCE SHEET</div>
-            <div class="stat-card" style="font-family:'Courier New', monospace; font-size:12px;">
-                GROSS REVENUE: <span style="float:right;">$${data.revenue.gross.toLocaleString()}</span><br>
-                <span style="color:red;">- STAFF PAYROLL: <span style="float:right;">($${data.revenue.staff})</span></span><br>
-                <span style="color:red;">- MAYOR CONTRACTS: <span style="float:right;">($${data.revenue.contracts.toFixed(0)})</span></span><br>
-                <span style="color:red;">- FOOD SUPPLY: <span style="float:right;">($${data.revenue.foodSupply})</span></span><br>
-                <span style="color:red;">- LEGAL/LAWSUITS: <span style="float:right;">($${data.revenue.lawsuits})</span></span>
-                <hr>
-                <strong>NET MONTHLY PROFIT: <span style="float:right;">$${data.revenue.net.toLocaleString()}</span></strong>
-            </div>
-        </div>`;
+    if (view === 'park' || view === 'contracts') renderDashboard(view);
+    if (view === 'pricing') renderPricing();
+    if (view === 'advertising') renderAdvertising();
+    if (view === 'build') openBuildMenu();
+    if (view === 'manage-rides') openRidesList();
+    if (view === 'staff') renderStaff();
+    if (view === 'maintenance') renderMaintenance();
+    if (view === 'save') saveToLocal();
+    if (view === 'export') exportSave();
+    if (view === 'import') importSave();
+    if (view === 'new-game') confirmNewGame();
 }
 
-
-function changeStatsView(dir) {
-    statsViewOffset += dir;
-    renderDashboard();
+function renderDashboard(view = 'park') {
+    const main = document.getElementById('main-content');
+    const rides = getRides();
+    const usedLand = rides.reduce((total, ride) => total + Number(ride.sizePoints || 0), 0);
+    const last = saveFile.history[statsViewOffset];
+    if (view === 'contracts') {
+        main.innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>CONTRACT LEDGER</span><span class="panel-code">CITY-95</span></div><div class="notice"><strong>THE PARK IS YOUR CONTRACT.</strong><p>Reach 25 reputation to earn the city's amusement district grant. Your current reputation is ${saveFile.reputation.toFixed(1)}.</p><div class="progress"><i style="width:${Math.min(100, saveFile.reputation * 4)}%"></i></div></div></section>`;
+        return;
+    }
+    const monthly = last ? `<div class="report-card"><div class="report-title">LAST MONTH // ${last.date}</div><div class="metric-row"><span>Total riders</span><strong>${last.population.total.toLocaleString()}</strong></div><div class="metric-row"><span>Revenue</span><strong>${money(last.revenue.gross)}</strong></div><div class="metric-row"><span>Expenses</span><strong class="negative">${money(last.revenue.expenses)}</strong></div><div class="metric-row"><span>Net result</span><strong class="${last.revenue.net >= 0 ? 'positive' : 'negative'}">${money(last.revenue.net)}</strong></div><p class="report-note">${last.note}</p>${(last.riders || []).map(ride => `<div class="metric-row ride-report"><span>${ride.model} // ${ride.riders.toLocaleString()} riders</span><strong>${money(ride.revenue)}</strong></div>`).join('')}</div>` : '<div class="notice"><strong>WELCOME, PARK DIRECTOR.</strong><p>Build an attraction, set your operating plan, then end the month to see how the park performs.</p></div>';
+    main.innerHTML = `<section class="win95-dialog dashboard"><div class="panel-heading"><span>${monthNames[saveFile.currentDate.month - 1].toUpperCase()} ${saveFile.currentDate.year} // PARK OFFICE</span><span class="panel-code">LIVE</span></div><div class="dashboard-intro"><div><p class="kicker">CURRENT PARK PROFILE</p><h1>Make the crowds<br>come back.</h1></div><div class="park-grade"><span>REPUTATION</span><strong>${saveFile.reputation.toFixed(1)}</strong><small>${rides.length} attraction${rides.length === 1 ? '' : 's'} online</small></div></div><div class="dashboard-grid"><div class="stat-card"><label>LAND USED</label><strong>${usedLand}</strong><small>of ${saveFile.totalLandAvailable} land points</small></div><div class="stat-card"><label>GATE PRICE</label><strong>${money(saveFile.gatePrice)}</strong><small>each ride ticket</small></div><div class="stat-card"><label>RIDES ONLINE</label><strong>${rides.length}</strong><small>${saveFile.staff} staff // ${saveFile.maintenance} crews</small></div></div>${monthly}</section>`;
 }
 
-// ==========================================
-// ======= BUILD SYSTEM (CUBIC) =============
-// ==========================================
+function renderPricing() {
+    document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>PRICING DESK</span><span class="panel-code">DECISION</span></div><p class="section-copy">Higher prices increase revenue, but guests are less forgiving when the ticket feels expensive.</p><div class="form-grid"><label>GATE ADMISSION<input id="gate-price" type="number" min="1" max="50" step="1" value="${saveFile.gatePrice}"></label><label>AVERAGE FOOD BILL<input id="food-price" type="number" min="1" max="30" step="1" value="${saveFile.foodPrice}"></label></div><button class="win95-btn primary wide-btn" onclick="applyPricing()">SET PRICES</button></section>`;
+}
+function applyPricing() { saveFile.gatePrice = clamp(Number(document.getElementById('gate-price').value), 1, 50); saveFile.foodPrice = clamp(Number(document.getElementById('food-price').value), 1, 30); updateInfoPanel(); renderDashboard(); }
+function renderAdvertising() { document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>ADVERTISING OFFICE</span><span class="panel-code">MONTHLY PLAN</span></div><p class="section-copy">Buy attention before the month begins. Campaigns cost money immediately and affect this month's attendance.</p><div class="choice-grid">${[['0', 'No campaign', '$0'], ['1', 'Local radio', '$2,000'], ['2', 'Regional TV', '$6,000'], ['3', 'National push', '$12,000']].map(([value, label, cost]) => `<button class="choice ${saveFile.advertising == value ? 'selected' : ''}" onclick="setAdvertising(${value})"><strong>${label}</strong><span>${cost}</span></button>`).join('')}</div></section>`; }
+function setAdvertising(level) { const cost = [0, 2000, 6000, 12000][level]; if (saveFile.money < cost) { alert('Not enough cash for that campaign.'); return; } saveFile.advertising = level; renderAdvertising(); }
 
 function openBuildMenu() {
-    const main = document.getElementById('main-content');
-    main.innerHTML = `
-        <div class="win95-dialog">
-            <h3 class="panel-title">New Attraction Wizard</h3>
-            <div class="input-group">
-                Category: <select id="type-select" class="win95-input" onchange="updateModelDropdown()">
-                    <option value="">-- Choose --</option>
-                    <option value="coaster">Coaster</option>
-                    <option value="flat">Flat Ride</option>
-                </select>
-            </div>
-            <div class="input-group">
-                Model: <select id="model-select" class="win95-input" disabled onchange="enableInputs()">
-                    <option value="">-- Select Category First --</option>
-                </select>
-            </div>
-            <hr>
-            <div id="build-inputs" style="opacity: 0.4; pointer-events: none;">
-                <div class="input-group">
-                    LAND POINTS: <input type="number" id="in-land" value="10" min="1" max="100" class="win95-input">
-                    <div class="sub-label">Limits max stats to <span id="land-display">10</span></div>
-                </div>
-                <div class="input-group">
-                    EXCITEMENT $: <input type="number" id="in-excitement" value="5000" class="win95-input">
-                    <div class="sub-label">Yield: <span id="yield-e" class="v-point">10.00</span> points</div>
-                </div>
-                <div class="input-group">
-                    INTENSITY $: <input type="number" id="in-intensity" value="5000" class="win95-input">
-                    <div class="sub-label">Yield: <span id="yield-i" class="v-point">10.00</span> points</div>
-                </div>
-                <div class="input-group">
-                    THEMING $: <input type="number" id="in-theme" value="5000" class="win95-input">
-                    <div class="sub-label">Yield: <span id="yield-t" class="v-point">10.00</span> points</div>
-                </div>
-            </div>
-            <div id="total-cost-display" style="font-weight:bold; margin: 10px 0;">Total: $15,000</div>
-            <button class="win95-btn primary" id="btn-build" disabled onclick="finalizeBuild()">START CONSTRUCTION</button>
-        </div>`;
-
-    ['in-land', 'in-excitement', 'in-intensity', 'in-theme'].forEach(id => {
-        document.getElementById(id).addEventListener('input', calculateBuildStats);
-    });
+    const available = Object.entries(rideModels).filter(([, model]) => model.yearDeveloped <= saveFile.currentDate.year);
+    const usedLand = getRides().reduce((total, ride) => total + Number(ride.sizePoints || 0), 0);
+    document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>ATTRACTION WORKSHOP</span><span class="panel-code">${saveFile.totalLandAvailable - usedLand} LAND LEFT</span></div><p class="section-copy">Choose a ride that fits the era and your budget. Size controls capacity and payroll; excitement drives demand.</p><label class="select-label">RIDE MODEL<select id="model-select">${available.map(([name, model]) => `<option value="${name}">${name.toUpperCase()} // ${model.type}</option>`).join('')}</select></label><div id="ride-preview" class="ride-preview"></div><button class="win95-btn primary wide-btn" onclick="finalizeBuild()">BUILD ATTRACTION</button></section>`;
+    document.getElementById('model-select').addEventListener('change', updateRidePreview);
+    updateRidePreview();
 }
+function updateRidePreview() { const model = rideModels[document.getElementById('model-select').value]; document.getElementById('ride-preview').innerHTML = `<span>${model.type} // ${model.yearDeveloped}</span><strong>${money(model.cost)}</strong><small>SIZE ${model.sizePoints} // CAPACITY ${model.sizePoints * 100} // EXCITEMENT ${model.excitementPoints}/10 // LIFE ${model.lifeSpan} YRS</small>`; }
+function finalizeBuild() { const name = document.getElementById('model-select').value; const model = rideModels[name]; const usedLand = getRides().reduce((total, ride) => total + Number(ride.sizePoints || 0), 0); if (usedLand + model.sizePoints > saveFile.totalLandAvailable) return alert('There is not enough land for that attraction.'); if (saveFile.money < model.cost) return alert('Insufficient funds.'); saveFile.money -= model.cost; saveFile.rides[`R_${Date.now()}`] = { ...model, model: name, manufacturer: 'Ziekenhuis', qMult: 1, payroll: model.basePayroll + model.sizePoints * 10, monthlyCapacity: model.sizePoints * 100, ridersThisMonth: 0, price: saveFile.gatePrice, age: 0 }; updateInfoPanel(); renderDashboard(); }
 
-function moneyToDecimalPoints(budget) {
-    if (budget <= 0) return 0;
-    let points = 0, total = 0;
-    while (points < 100) {
-        let cost = 1.5 * Math.pow(points + 1, 2);
-        if (total + cost > budget) break;
-        total += cost; points++;
-    }
-    if (points < 100) points += (budget - total) / (1.5 * Math.pow(points + 1, 2));
-    return points;
-}
-
-function calculateBuildStats() {
-    const lField = document.getElementById('in-land');
-    lField.value = Math.floor(lField.value);
-    const land = parseInt(lField.value) || 1;
-    document.getElementById('land-display').innerText = land;
-
-    const e$ = parseFloat(document.getElementById('in-excitement').value) || 0;
-    const i$ = parseFloat(document.getElementById('in-intensity').value) || 0;
-    const t$ = parseFloat(document.getElementById('in-theme').value) || 0;
-
-    const pE = Math.min(moneyToDecimalPoints(e$), land);
-    const pI = Math.min(moneyToDecimalPoints(i$), land);
-    const pT = Math.min(moneyToDecimalPoints(t$), land);
-
-    document.getElementById('yield-e').innerText = pE.toFixed(2);
-    document.getElementById('yield-i').innerText = pI.toFixed(2);
-    document.getElementById('yield-t').innerText = pT.toFixed(2);
-    document.getElementById('total-cost-display').innerText = `Total: $${(e$+i$+t$).toLocaleString()}`;
-}
-
-function finalizeBuild() {
-    const e$ = parseFloat(document.getElementById('in-excitement').value);
-    const i$ = parseFloat(document.getElementById('in-intensity').value);
-    const t$ = parseFloat(document.getElementById('in-theme').value);
-    const cost = e$ + i$ + t$;
-
-    if (saveFile.money >= cost) {
-        saveFile.money -= cost;
-        const id = `R_${Date.now()}`;
-        saveFile.rides[id] = {
-            model: document.getElementById('model-select').value,
-            e: parseFloat(document.getElementById('yield-e').innerText),
-            i: parseFloat(document.getElementById('yield-i').innerText),
-            t: parseFloat(document.getElementById('yield-t').innerText)
-        };
-        updateInfoPanel();
-        goBack();
-    } else { alert("Insufficient Funds!"); }
-}
-
-// ==========================================
-// ======= TIME & SIMULATION LOGIC ==========
-// ==========================================
+function openRidesList() { const rides = getRides(); document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>ATTRACTION ROSTER</span><span class="panel-code">${rides.length} ONLINE</span></div>${rides.length ? rides.map((ride, index) => `<div class="ride-row"><div><strong>${ride.model.toUpperCase()}</strong><span>SIZE ${ride.sizePoints} // CAPACITY ${ride.monthlyCapacity} // PAYROLL ${money(ride.payroll)}</span><span>AGE ${ride.age.toFixed(2)} // LAST RIDERS ${(ride.ridersThisMonth || 0).toLocaleString()}</span></div><button class="small-btn" onclick="sellRide('${Object.keys(saveFile.rides)[index]}')">SELL ${money(ride.cost * .35)}</button></div>`).join('') : '<div class="notice"><strong>NO ATTRACTIONS ONLINE.</strong><p>Build your first ride to start attracting guests.</p></div>'}</section>`; }
+function sellRide(id) { const ride = saveFile.rides[id]; if (!ride) return; saveFile.money += Math.round(ride.cost * .35); delete saveFile.rides[id]; updateInfoPanel(); openRidesList(); }
+function renderStaff() { document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>STAFFING OFFICE</span><span class="panel-code">${saveFile.staff} HIRED</span></div><p class="section-copy">Staff costs ${money(1200)} per person each month. Understaffing hurts the guest experience; overstaffing protects your reputation.</p><div class="stepper"><button onclick="changeStaff(-1)">-</button><strong>${saveFile.staff}</strong><button onclick="changeStaff(1)">+</button></div><p class="center-note">Recommended: ${Math.max(2, Math.ceil(getRides().length * 1.5))} staff for your current park.</p></section>`; }
+function changeStaff(amount) { const next = Math.max(0, Math.min(12, saveFile.staff + amount)); if (next > saveFile.staff && saveFile.money < 1200) return alert('You cannot afford another hire.'); saveFile.staff = next; renderStaff(); }
+function renderMaintenance() { document.getElementById('main-content').innerHTML = `<section class="win95-dialog"><div class="panel-heading"><span>MAINTENANCE BAY</span><span class="panel-code">${saveFile.maintenance} CREWS</span></div><p class="section-copy">Maintenance crews restore attraction condition at the end of each month. Neglected rides lose appeal and invite lawsuits.</p><div class="stepper"><button onclick="changeMaintenance(-1)">-</button><strong>${saveFile.maintenance}</strong><button onclick="changeMaintenance(1)">+</button></div><p class="center-note">Each crew costs ${money(800)} per month.</p></section>`; }
+function changeMaintenance(amount) { saveFile.maintenance = Math.max(0, Math.min(8, saveFile.maintenance + amount)); renderMaintenance(); }
 
 function runEndOfMonth() {
     if (isProcessing) return;
-    
-    // 1. Lock the UI
+    isProcessing = true;
     toggleInputLock(true);
-    const main = document.getElementById('main-content');
-    main.innerHTML = `
-        <div class="win95-dialog" style="text-align:center; padding:40px;">
-            <h3 class="panel-title">System Status</h3>
-            <p><strong>CALCULATING MONTHLY RESULTS...</strong></p>
-            <div style="margin:20px auto; width:80%; height:20px; border:2px inset white; background:#808080;">
-                <div id="progress-bar" style="width:0%; height:100%; background:var(--dull-teal);"></div>
-            </div>
-            <p style="font-size:10px;">Simulating Guest Archetypes & Ride Physics</p>
-        </div>
-    `;
+    document.getElementById('main-content').innerHTML = '<section class="win95-dialog processing"><div class="panel-heading"><span>MONTHLY CLOSE</span><span class="panel-code">PROCESSING</span></div><h1>Counting guests...</h1><div class="loading-bar"><i></i></div><p>Reviewing weather, queues, payroll, and ride condition.</p></section>';
+    setTimeout(resolveMonth, 450);
+}
 
+function resolveMonth() {
+    const rides = getRides();
+    const monthIndex = saveFile.currentDate.month - 1;
+    const rideReports = [];
+    let totalRevenue = 0;
+    let totalPayroll = 0;
+    let totalMaintenance = 0;
+    let totalBreakdownPenalty = 0;
+    let totalExcitement = 0;
 
-    setTimeout(() => {
-        // 1. Setup Monthly Ledger (The "Brain" for the report)
-        let ledger = {
-            population: { total: 0, children: 0, teens: 0, youngAdults: 0, parents: 0, seniors: 0 },
-            time: { totalInRides: 0, totalInStalls: 0, totalWasted: 0 },
-            revenue: { gross: 0, contracts: 0, lawsuits: 0, staff: 0, foodSupply: 0, net: 0 }
-        };
+    rides.forEach(ride => {
+        ride.age = Number(ride.age || 0) + (1 / 12);
+        ride.price = saveFile.gatePrice;
+        ride.qMult = Number(ride.qMult || 1);
+        ride.monthlyCapacity = ride.sizePoints * 100;
+        ride.payroll = ride.basePayroll + (ride.sizePoints * 10);
+        const demand = ride.excitementPoints * ride.qMult * 100;
+        ride.ridersThisMonth = Math.min(ride.monthlyCapacity, demand);
+        const maintenanceCost = ride.age * 5;
+        const breakdownPenalty = ride.age > ride.lifeSpan ? (ride.age - ride.lifeSpan) * .2 : 0;
+        const revenue = ride.price * ride.ridersThisMonth;
+        totalRevenue += revenue;
+        totalPayroll += ride.payroll;
+        totalMaintenance += maintenanceCost;
+        totalBreakdownPenalty += breakdownPenalty;
+        totalExcitement += ride.excitementPoints;
+        rideReports.push({ model: ride.model, riders: ride.ridersThisMonth, revenue, maintenanceCost, breakdownPenalty });
+    });
 
-        // 2. Population & Demographic Simulation
-        // 1 guest = 1000 people. Let's simulate 5 "units" (5000 people) for now
-        const guestUnits = Math.floor(saveFile.reputation * 0.5) + 2; 
-        ledger.population.total = guestUnits * 1000;
-
-        // Simple distribution for now (will be refined by your guest weight logic later)
-        ledger.population.teens = Math.floor(ledger.population.total * 0.3);
-        ledger.population.parents = Math.floor(ledger.population.total * 0.4);
-        ledger.population.children = ledger.population.total - (ledger.population.teens + ledger.population.parents);
-
-        // 3. Time Calculations (Minutes)
-        ledger.time.totalInRides = guestUnits * 120; // Placeholder: 2 hours per unit
-        ledger.time.totalInStalls = guestUnits * 30;
-        ledger.time.totalWasted = guestUnits * 60; // Walking/Waiting
-
-        // 4. Financials
-        ledger.revenue.gross = (ledger.population.total * 0.015) * 12; // Example math
-        ledger.revenue.staff = Object.keys(saveFile.rides).length * 500; // $500 per ride payroll
-        ledger.revenue.contracts = ledger.revenue.gross * 0.10; // 10% Mayor Tax
-        ledger.revenue.foodSupply = ledger.population.total * 0.05;
-        ledger.revenue.lawsuits = saveFile.reputation < 5 ? 1000 : 0; // Penalty for low rep
-        
-        ledger.revenue.net = ledger.revenue.gross - (ledger.revenue.staff + ledger.revenue.contracts + ledger.revenue.foodSupply + ledger.revenue.lawsuits);
-        
-        saveFile.money += ledger.revenue.net;
-
-        // 5. Update History with Full Ledger
-        saveFile.history.months.unshift({
-            date: `${saveFile.currentDate.month}/${saveFile.currentDate.year}`,
-            ledger: ledger
-        });
-
-
-        // 2. Increment Dates (12-month rollover)
-        saveFile.currentDate.month++;
-        if (saveFile.currentDate.month > 12) {
-            saveFile.currentDate.month = 1;
-            saveFile.currentDate.year++;
-        }
-
-        // 3. Process Ride Aging (Actual and Functional)
-        for (let id in saveFile.rides) {
-            let ride = saveFile.rides[id];
-            ride.actualAge += 1;
-            ride.functionalAge += 1;
-        }
-
-        // 4. Update History
-            saveFile.history.months.unshift({
-                date: `${saveFile.currentDate.month}/${saveFile.currentDate.year}`,
-                visitors: visitors,
-                revenue: revenue,
-                spendingPerHead: 12.0,
-                demographics: { teens: 0.5, adults: 0.5 }
-            });
-
-        // 5. Condensation System (Triggers at month 19)
-        if (saveFile.history.months.length > 18) {
-            // Extract the oldest 12 months to condense them into 1 year
-            const lastYear = saveFile.history.months.splice(-12);
-            
-            const summary = lastYear.reduce((acc, mo) => {
-                acc.totalVisitors += mo.visitors;
-                acc.totalRevenue += mo.revenue;
-                acc.avgSpend += mo.spendingPerHead;
-                return acc;
-            }, { totalVisitors: 0, totalRevenue: 0, avgSpend: 0 });
-
-            saveFile.history.years.unshift({
-                year: lastYear[0].date.split('/')[1], // Grabs the year string
-                avgVisitors: Math.floor(summary.totalVisitors / 12),
-                totalRevenue: summary.totalRevenue,
-                avgSpend: (summary.avgSpend / 12).toFixed(2)
-            });
-
-            // Limit year history to prevent infinite growth
-            if (saveFile.history.years.length > 20) saveFile.history.years.pop();
-        }
-
+    const totalExpenses = totalPayroll + totalMaintenance;
+    const net = totalRevenue - totalExpenses;
+    const averageExcitement = rides.length ? totalExcitement / rides.length : 0;
+    const reputationChange = (averageExcitement * .1) - totalBreakdownPenalty;
+    saveFile.money += net;
+    saveFile.reputation = clamp(saveFile.reputation + reputationChange, 0, 100);
+    saveFile.history.unshift({
+        date: `${monthNames[monthIndex]} ${saveFile.currentDate.year}`,
+        population: { total: rideReports.reduce((sum, ride) => sum + ride.riders, 0) },
+        revenue: { gross: totalRevenue, payroll: totalPayroll, maintenance: totalMaintenance, expenses: totalExpenses, net },
+        riders: rideReports,
+        reputationChange,
+        note: `${rideReports.reduce((sum, ride) => sum + ride.riders, 0).toLocaleString()} riders visited ${rides.length} attraction${rides.length === 1 ? '' : 's'}. Reputation ${reputationChange >= 0 ? 'rose' : 'fell'} by ${Math.abs(reputationChange).toFixed(2)}.`
+    });
+    saveFile.currentDate.month += 1;
+    if (saveFile.currentDate.month > 12) { saveFile.currentDate.month = 1; saveFile.currentDate.year += 1; }
+    saveFile.advertising = 0;
+    statsViewOffset = 0;
+    isProcessing = false;
     toggleInputLock(false);
-    renderTabButtons();
-    renderDashboard();
-    updateInfoPanel();
-    }, 500); 
-}
-
-
-function updateInfoPanel() {
-    document.getElementById('money').innerText = `$${saveFile.money.toLocaleString()}`;
-    document.getElementById('rep').innerText = saveFile.reputation.toFixed(1);
-    document.getElementById('date').innerText = `${saveFile.currentDate.month}/${saveFile.currentDate.year}`;
-}
-
-// ==========================================
-// ======= HELPERS & INITIALIZATION =========
-// ==========================================
-
-function updateModelDropdown() {
-    const type = document.getElementById('type-select').value;
-    const drop = document.getElementById('model-select');
-    drop.disabled = !type;
-    drop.innerHTML = '<option value="">-- Choose Model --</option>';
-    const src = type === 'coaster' ? gameData.model : gameData.flatRides;
-    for (let m in src) {
-        let opt = document.createElement('option');
-        opt.value = m; opt.innerText = m.toUpperCase();
-        drop.appendChild(opt);
-    }
-}
-
-function enableInputs() {
-    document.getElementById('build-inputs').style.opacity = "1";
-    document.getElementById('build-inputs').style.pointerEvents = "all";
-    document.getElementById('btn-build').disabled = false;
-}
-
-function openRidesList() {
-    const main = document.getElementById('main-content');
-    let html = `<div class="win95-dialog"><h3 class="panel-title">Asset Inventory</h3>`;
-    for (let id in saveFile.rides) {
-        let r = saveFile.rides[id];
-        html += `<div style="border:1px solid #808080; margin:4px; padding:4px; background:#fff;"><b>${r.model.toUpperCase()}</b><br>Excitement: ${r.e}</div>`;
-    }
-    main.innerHTML = html + `</div>`;
-}
-
-// ==========================================
-// ======= SAVE & FILE MANAGEMENT ===========
-// ==========================================
-
-function saveToLocal() {
-    localStorage.setItem('AmusementSim_Save', JSON.stringify(saveFile));
-    showPlaceholder('System', 'Game state saved to browser storage successfully.');
-}
-
-function exportSave() {
-    const blob = new Blob([JSON.stringify(saveFile, null, 2)], {type: "text/plain"});
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `park_save_${saveFile.currentDate.month}_${saveFile.currentDate.year}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-}
-
-function importSave() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.onchange = e => {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = readerEvent => {
-            try {
-                const content = JSON.parse(readerEvent.target.result);
-                saveFile = content;
-                updateInfoPanel();
-                renderDashboard();
-                showPlaceholder('System', 'Save file imported successfully!');
-            } catch (err) {
-                alert("Error: Invalid save file format.");
-            }
-        }
-        reader.readAsText(file);
-    }
-    input.click();
-}
-
-function confirmDelete() {
-    const main = document.getElementById('main-content');
-    main.innerHTML = `
-        <div class="win95-dialog">
-            <h3 class="panel-title" style="background:red;">⚠️ WARNING: FORMAT DRIVE C:?</h3>
-            <div style="padding: 20px; border: 2px inset var(--gray-1); background: #eee;">
-                <p>Are you sure you want to delete all local save data? This cannot be undone.</p>
-                <div style="margin-top:20px; display:flex; gap:10px;">
-                    <button class="win95-btn primary" onclick="deleteSaveFinal()">YES, DELETE</button>
-                    <button class="win95-btn" onclick="goBack()">CANCEL</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function deleteSaveFinal() {
-    localStorage.removeItem('AmusementSim_Save');
-    alert("Local storage cleared. Reloading...");
-    location.reload();
-}
-
-
-// START ENGINE
-document.addEventListener('DOMContentLoaded', () => {
-    const localData = localStorage.getItem('AmusementSim_Save');
-    if (localData) {
-        saveFile = JSON.parse(localData);
-    }
     updateInfoPanel();
     renderTabButtons();
     renderDashboard();
-});
+}
 
+function toggleInputLock(locked) { document.querySelectorAll('#tab-buttons button').forEach(button => { button.disabled = locked; }); }
+function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+function updateInfoPanel() { document.getElementById('money').innerText = money(saveFile.money); document.getElementById('rep').innerText = saveFile.reputation.toFixed(1); document.getElementById('date').innerText = `${monthNames[saveFile.currentDate.month - 1]} ${saveFile.currentDate.year}`; document.getElementById('ride-count').innerText = getRides().length; }
+function saveToLocal() { localStorage.setItem('AmusementSim_Save', JSON.stringify(saveFile)); renderDashboard(); alert('Park saved locally.'); }
+function exportSave() { const blob = new Blob([JSON.stringify(saveFile, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `park-save-${saveFile.currentDate.year}.json`; link.click(); URL.revokeObjectURL(url); }
+function importSave() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.json,.txt'; input.onchange = event => { const reader = new FileReader(); reader.onload = () => { try { saveFile = normalizeState(JSON.parse(reader.result)); updateInfoPanel(); renderDashboard(); } catch (error) { alert('That file is not a valid park save.'); } }; reader.readAsText(event.target.files[0]); }; input.click(); }
+function confirmNewGame() { if (confirm('Start a new park? This will erase the current local game.')) { localStorage.removeItem('AmusementSim_Save'); saveFile = startingState(); updateInfoPanel(); renderTabButtons(); renderDashboard(); } }
+
+document.addEventListener('DOMContentLoaded', () => { const localData = localStorage.getItem('AmusementSim_Save'); if (localData) { try { saveFile = normalizeState(JSON.parse(localData)); } catch (error) { saveFile = startingState(); } } updateInfoPanel(); renderTabButtons(); renderDashboard(); });
